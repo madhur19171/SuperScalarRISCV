@@ -1,0 +1,23 @@
+`define NOP 15
+`define AND 0
+`define OR 1
+`define SRA 2
+`define SRL 3
+`define XOR 4
+`define SLTU 5
+`define SLT 6
+`define SLL 7
+`define SUB 8
+`define ADD 9
+
+`define E_NOP 15
+`define E_AND 0
+`define E_OR 1
+`define E_SRA 2
+`define E_SRL 3
+`define E_XOR 4
+`define E_SLTU 5
+`define E_SLT 6
+`define E_SLL 7
+`define E_SUB 8
+`define E_ADD 9
