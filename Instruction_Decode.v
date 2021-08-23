@@ -127,16 +127,14 @@ module Instruction_Decode #(parameter ADDRESS_WIDTH = 10,
 					imm[i * DATA_WIDTH +: DATA_WIDTH] = 0;
 					
 					case(R_func3[i * FUNC3_WIDTH +: FUNC3_WIDTH])
-                       AND : executionID = E_AND;
-                       OR : executionID = E_OR;
-                       SRA : executionID = E_SRA;
-                       SRL : executionID = E_SRL;
-                       XOR : executionID = E_XOR;
-                       SLTU : executionID = E_SLTU;
-                       SLT : executionID = E_SLT;
-                       SLL : executionID = E_SLL;
-                       SUB : executionID = E_SUB;
-                       ADD : executionID = E_ADD;
+                       3'b111 : executionID = E_AND;
+                       3'b110 : executionID = E_OR;
+                       3'b101 : executionID = R_func7[i * FUNC7_WIDTH +: FUNC7_WIDTH] == 7'b0100000 ? E_SRA : E_SRL;
+                       3'b100 : executionID = E_XOR;
+                       3'b011 : executionID = E_SLTU;
+                       3'b010 : executionID = E_SLT;
+                       3'b001 : executionID = E_SLL;
+                       3'b000 : executionID = R_func7[i * FUNC7_WIDTH +: FUNC7_WIDTH] == 7'b0100000 ? E_SUB : E_ADD;
                        default : executionID = E_NOP;
                    endcase
 				end
@@ -151,12 +149,12 @@ module Instruction_Decode #(parameter ADDRESS_WIDTH = 10,
 					func7[i * FUNC7_WIDTH +: FUNC7_WIDTH] = 0;
 					
 				    case(I_func3[i * FUNC3_WIDTH +: FUNC3_WIDTH])
-                       AND : executionID = E_AND;
-                       OR : executionID = E_OR;
-                       XOR : executionID = E_XOR;
-                       SLTU : executionID = E_SLTU;
-                       SLT : executionID = E_SLT;
-                       ADD : executionID = E_ADD;
+                       3'b111 : executionID = E_AND;
+                       3'b110 : executionID = E_OR;
+                       3'b100 : executionID = E_XOR;
+                       3'b011 : executionID = E_SLTU;
+                       3'b010 : executionID = E_SLT;
+                       3'b000 : executionID = R_func7[i * FUNC7_WIDTH +: FUNC7_WIDTH] == 7'b0100000 ? E_SUB : E_ADD;
                        default : executionID = E_NOP;
                    endcase
 				end

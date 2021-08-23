@@ -6,6 +6,8 @@ module InstructionFetch #(parameter ADDRESS_WIDTH = 3,
 		  	    input rst,
 		  	    input halt,
 		  	    
+		  	    output IF_ready,
+		  	    
 		  	    //Branch Signals
 		  	    input isBranchTaken,
 		  	    input [DATA_WIDTH - 1 : 0] branchTarget,

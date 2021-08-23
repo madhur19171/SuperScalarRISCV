@@ -22,7 +22,7 @@ module Processor(input clk,
 	parameter IMM_OFFSET = 20;
 	parameter IMM_WIDTH = 12;
 	
-	parameter ROB_SIZE = 128;
+	parameter ROB_SIZE = 16;
 	
 	parameter EXEC_WIDTH = 4;
 	
@@ -66,6 +66,14 @@ module Processor(input clk,
 	wire [IPC * EXEC_WIDTH - 1 : 0] Decode_executionID;
 	wire [IPC * EXEC_WIDTH - 1 : 0] ROB_executionID;
 	
+	wire ROB_DU_dispatch;
+	wire [DATA_WIDTH - 1 : 0] ROB_DU_op1;
+	wire [DATA_WIDTH - 1 : 0] ROB_DU_op2;
+	wire [EXEC_WIDTH - 1 : 0] ROB_DU_executionID;
+	wire [TAG_WIDTH - 1 : 0] ROB_DU_executionTag;
+	
+	wire [2 ** EXEC_WIDTH - 1 : 0] DU_ROB_availableFunctionalUnits;
+	
 	assign halt = 0;
 	
 	InstructionMemory #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC)) InstructionMemory_0 
@@ -81,9 +89,13 @@ module Processor(input clk,
         (.clk(clk), .rst(rst), .halt(halt), .RType_valid(Decode_RF_RType_valid), .IType_valid(Decode_RF_IType_valid), .SType_valid(Decode_RF_SType_valid), .rs2(Decode_RF_rs2), .rs2_tag(RF_ROB_rs2_tag), .rs2_dataValid(RF_ROB_rs2_dataValid), .rs2_data(RF_ROB_rs2_data), .rs1(Decode_RF_rs1), .rs1_tag(RF_ROB_rs1_tag), .rs1_dataValid(RF_ROB_rs1_dataValid), .rs1_data(RF_ROB_rs1_data), .destinationTag(ROB_RF_destinationTag), .rd(Decode_RF_rd));
 
     DecodeROBPipeline #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC), .TAG_WIDTH(TAG_WIDTH), .OPCODE_WIDTH(OPCODE_WIDTH), .RF_WIDTH(RF_WIDTH), .EXEC_WIDTH(EXEC_WIDTH)) DecodeROBPipeline_0
-        (.clk(clk), .rst(rst), .halt(halt), .flush(0), .RType_valid_Decode(Decode_RF_RType_valid), .IType_valid_Decode(Decode_RF_IType_valid), .SType_valid_Decode(Decode_RF_SType_valid), .imm_Decode(Decode_RF_imm), .executionID_Decode(Decode_executionID), .RType_valid_ROB(RType_valid_ROB), .IType_valid_ROB(IType_valid_ROB), .SType_valid_ROB(SType_valid_ROB), .imm_ROB(imm_ROB), .executionID_ROB());
+        (.clk(clk), .rst(rst), .halt(halt), .flush(0), .RType_valid_Decode(Decode_RF_RType_valid), .IType_valid_Decode(Decode_RF_IType_valid), .SType_valid_Decode(Decode_RF_SType_valid), .imm_Decode(Decode_RF_imm), .executionID_Decode(Decode_executionID), .RType_valid_ROB(RType_valid_ROB), .IType_valid_ROB(IType_valid_ROB), .SType_valid_ROB(SType_valid_ROB), .imm_ROB(imm_ROB), .executionID_ROB(ROB_executionID));
 
     ReorderBuffer #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC), .TAG_WIDTH(TAG_WIDTH), .ROB_SIZE(ROB_SIZE), .EXEC_WIDTH(EXEC_WIDTH)) ReorderBuffer_0
-        (.clk(clk), .rst(rst), .halt(halt), .RType_valid(RType_valid_ROB), .IType_valid(IType_valid_ROB), .SType_valid(SType_valid_ROB), .imm(imm_ROB), .forwarded_RType_valid(Decode_RF_RType_valid), .forwarded_IType_valid(Decode_RF_IType_valid), .forwarded_SType_valid(Decode_RF_SType_valid), .rs2_tag(RF_ROB_rs2_tag), .rs2_dataValid(RF_ROB_rs2_dataValid), .rs2_data(RF_ROB_rs2_data), .rs1_tag(RF_ROB_rs1_tag), .rs1_dataValid(RF_ROB_rs1_dataValid), .rs1_data(RF_ROB_rs1_data), .destinationTag(ROB_RF_destinationTag), .executionID(ROB_executionID));
+        (.clk(clk), .rst(rst), .halt(halt), .RType_valid(RType_valid_ROB), .IType_valid(IType_valid_ROB), .SType_valid(SType_valid_ROB), .imm(imm_ROB), .forwarded_RType_valid(Decode_RF_RType_valid), .forwarded_IType_valid(Decode_RF_IType_valid), .forwarded_SType_valid(Decode_RF_SType_valid), .rs2_tag(RF_ROB_rs2_tag), .rs2_dataValid(RF_ROB_rs2_dataValid), .rs2_data(RF_ROB_rs2_data), .rs1_tag(RF_ROB_rs1_tag), .rs1_dataValid(RF_ROB_rs1_dataValid), .rs1_data(RF_ROB_rs1_data), .destinationTag(ROB_RF_destinationTag), .executionID_Decode(ROB_executionID), 
+        .dispatch(ROB_DU_dispatch), .op1(ROB_DU_op1), .op2(ROB_DU_op2), .executionID_DU(ROB_DU_executionID), .executionTag(ROB_DU_executionTag), .availableFunctionalUnits(DU_ROB_availableFunctionalUnits));
+
+    Dispatch #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC), .TAG_WIDTH(TAG_WIDTH), .EXEC_WIDTH(EXEC_WIDTH)) dispatchUnit
+        (.clk(clk), .rst(rst), .dispatch(ROB_DU_dispatch), .op1(ROB_DU_op1), .op2(ROB_DU_op2), .executionID(ROB_DU_executionID), .executionTag(ROB_DU_executionTag), .availableFunctionalUnits(DU_ROB_availableFunctionalUnits));
 
 endmodule

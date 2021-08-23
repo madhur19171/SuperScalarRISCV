@@ -10,6 +10,8 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 		  input rst, 
 		  input halt,
 		  
+		  output RF_ready,
+		  
 		  //Current Instruction Ports
 		  input [IPC - 1 : 0] RType_valid,
 		  input [IPC - 1 : 0] IType_valid,

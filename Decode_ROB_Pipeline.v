@@ -11,7 +11,10 @@ module DecodeROBPipeline #(parameter ADDRESS_WIDTH = 10,
 				input clk,
 		  		input rst,
 		  		input halt,
+		  		
 		  		input flush,
+		  		
+		  		output DecodeROBPipeline_ready,
 		  		
 		  		//RType Bus
 		  	 	input [IPC - 1 : 0] RType_valid_Decode,
