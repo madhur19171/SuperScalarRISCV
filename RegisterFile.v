@@ -10,7 +10,8 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 		  input rst, 
 		  input halt,
 		  
-		  output RF_ready,
+		  input allowDecode,
+		  input allowBroadcast,
 		  
 		  //Current Instruction Ports
 		  input [IPC - 1 : 0] RType_valid,
@@ -30,7 +31,13 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 		  //From ROB
 		  input [IPC * TAG_WIDTH - 1 : 0] destinationTag,
 		  //From Decode
-		  input [IPC * RF_WIDTH - 1 : 0] rd
+		  input [IPC * RF_WIDTH - 1 : 0] rd,
+		  
+		  //From Dispatch
+		      //Broadcast Receiver
+                input broadcastDataAvailable,
+                input [IPC * TAG_WIDTH - 1 : 0] broadcastDestinationTag,
+                input [IPC * DATA_WIDTH - 1 : 0] broadcastDestinationData
 		  );
 		  
 	//The Register File will be organized as follows:
@@ -41,9 +48,11 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 	//But these 3 components of the register file will be completely separate from each other
 		  
 	(* ram_style =  "BRAM" *) reg [DATA_WIDTH - 1 : 0] RF_DATA [0 : 2 ** RF_WIDTH - 1];	//Should be RAW type of RAM
-	reg [TAG_WIDTH - 1 : 0] RF_TAG [0 : 2 ** RF_WIDTH - 1]; 
+	(* ram_style =  "register" *)reg [TAG_WIDTH - 1 : 0] RF_TAG [0 : 2 ** RF_WIDTH - 1]; 
 	reg [2 ** RF_WIDTH - 1 : 0] RF_VALID = 1;
 
+	reg [IPC * DATA_WIDTH - 1 : 0] rs1_data_reg = 0;
+	reg [IPC * DATA_WIDTH - 1 : 0] rs2_data_reg = 0;
 	
 	integer j;
 	initial begin
@@ -63,50 +72,41 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 				if(rst)begin
 					rs2_tag[i * TAG_WIDTH +: TAG_WIDTH] <= 0;
 					rs2_dataValid[i] <= 0;
-					rs2_data[i * DATA_WIDTH +: DATA_WIDTH] <= 0;
+					rs2_data_reg[i * DATA_WIDTH +: DATA_WIDTH] <= 0;
 					
 					rs1_tag[i * TAG_WIDTH +: TAG_WIDTH] <= 0;
 					rs1_dataValid[i] <= 0;
-					rs1_data[i * DATA_WIDTH +: DATA_WIDTH] <= 0;
+					rs1_data_reg[i * DATA_WIDTH +: DATA_WIDTH] <= 0;
 				end
 				
-				else begin
-				
-					//Always Read the data. The valid bits will decide if that data is of any use
-					rs2_tag[i * TAG_WIDTH +: TAG_WIDTH] <= RF_TAG[rs2[i * RF_WIDTH +: RF_WIDTH]];
-					rs2_data[i * DATA_WIDTH +: DATA_WIDTH] <= RF_DATA[rs2[i * RF_WIDTH +: RF_WIDTH]];
-					
-					rs1_tag[i * TAG_WIDTH +: TAG_WIDTH] <= RF_TAG[rs1[i * RF_WIDTH +: RF_WIDTH]];
-					rs1_data[i * DATA_WIDTH +: DATA_WIDTH] <= RF_DATA[rs1[i * RF_WIDTH +: RF_WIDTH]];
-					
-					if(RType_valid[i])begin
-					//	i-th instruction is Register Type
-						rs2_dataValid[i] <= RF_VALID[rs2[i * RF_WIDTH +: RF_WIDTH]];
-						rs1_dataValid[i] <= RF_VALID[rs1[i * RF_WIDTH +: RF_WIDTH]];
-					end
-					
-					else if(IType_valid[i])begin
-					//	i-th instruction is Immediate Type
-						rs2_dataValid[i] <= 0;
-						rs1_dataValid[i] <= RF_VALID[rs1[i * RF_WIDTH +: RF_WIDTH]];
-					end
-					
-					else if(SType_valid[i])begin
-					//	i-th instruction is Store Type
-						rs2_dataValid[i] <= RF_VALID[rs2[i * RF_WIDTH +: RF_WIDTH]];
-						rs1_dataValid[i] <= RF_VALID[rs1[i * RF_WIDTH +: RF_WIDTH]];
-					end
+				else if(~halt)
+				    if(allowDecode)begin
+                        //Always Read the data. The valid bits will decide if that data is of any use
+                        rs2_tag[i * TAG_WIDTH +: TAG_WIDTH] <= RF_TAG[rs2[i * RF_WIDTH +: RF_WIDTH]];
+                        rs2_data_reg[i * DATA_WIDTH +: DATA_WIDTH] <= RF_DATA[rs2[i * RF_WIDTH +: RF_WIDTH]];
+                        
+                        rs1_tag[i * TAG_WIDTH +: TAG_WIDTH] <= RF_TAG[rs1[i * RF_WIDTH +: RF_WIDTH]];
+                        rs1_data_reg[i * DATA_WIDTH +: DATA_WIDTH] <= RF_DATA[rs1[i * RF_WIDTH +: RF_WIDTH]];
+                        
+                        if(RType_valid[i])begin
+                        //	i-th instruction is Register Type
+                            rs2_dataValid[i] <= RF_VALID[rs2[i * RF_WIDTH +: RF_WIDTH]];
+                            rs1_dataValid[i] <= RF_VALID[rs1[i * RF_WIDTH +: RF_WIDTH]];
+                        end
+                        
+                        else if(IType_valid[i])begin
+                        //	i-th instruction is Immediate Type
+                            rs2_dataValid[i] <= 0;
+                            rs1_dataValid[i] <= RF_VALID[rs1[i * RF_WIDTH +: RF_WIDTH]];
+                        end
+                        
+                        else if(SType_valid[i])begin
+                        //	i-th instruction is Store Type
+                            rs2_dataValid[i] <= RF_VALID[rs2[i * RF_WIDTH +: RF_WIDTH]];
+                            rs1_dataValid[i] <= RF_VALID[rs1[i * RF_WIDTH +: RF_WIDTH]];
+                        end
 				end
 			end
-			
-			/*
-			always @(*)begin
-				for(j = i; j < IPC; j = j + 1)begin
-					if(prev_rd_valid[j] == 1 && prev_rd_valid[i] == 1 && prev_rd_tag[j * TAG_WIDTH  +: TAG_WIDTH] == prev_rd_tag[i * TAG_WIDTH  +: TAG_WIDTH])
-					   prev_rd_tag_write[prev_rd[j * RF_WIDTH +: RF_WIDTH] * TAG_WIDTH +: TAG_WIDTH] = prev_rd_tag[i * TAG_WIDTH +: TAG_WIDTH];
-				end
-			end
-			*/
 			
 			
 			always @(posedge clk)begin
@@ -115,6 +115,22 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 					RF_TAG[rd[i * RF_WIDTH +: RF_WIDTH]] <= destinationTag;
 				end
 			end
+			
+			//   Broadcast/Forwarding
+			always @(*)begin
+			     if(broadcastDataAvailable & rs1_tag[i * TAG_WIDTH +: TAG_WIDTH] == broadcastDestinationTag & ~rs1_dataValid[i])//If broadcast tag and rs1 tag match and the data is invalid, then use broadcast data
+			         rs1_data = broadcastDestinationData;
+			     else 
+			         rs1_data = rs1_data_reg[i * DATA_WIDTH +: DATA_WIDTH];
+			end
+			
+			always @(*)begin
+			     if(broadcastDataAvailable & rs2_tag[i * TAG_WIDTH +: TAG_WIDTH] == broadcastDestinationTag & ~rs2_dataValid[i])//If broadcast tag and rs1 tag match and the data is invalid, then use broadcast data
+			         rs2_data = broadcastDestinationData;
+			     else 
+			         rs2_data = rs2_data_reg[i * DATA_WIDTH +: DATA_WIDTH];
+			end
+			
 		end
 	endgenerate
 	

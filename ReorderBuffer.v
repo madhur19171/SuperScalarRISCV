@@ -47,7 +47,7 @@ module ReorderBuffer #(parameter ADDRESS_WIDTH = 10,
                 output  [DATA_WIDTH - 1 : 0] op1,    //rs1 for most of the instructions
                 output  [DATA_WIDTH - 1 : 0] op2,    //rs2/imm for most instructions
                 output reg [EXEC_WIDTH - 1 : 0] executionID_DU = 0,
-                output reg [IPC * TAG_WIDTH - 1 : 0] executionTag = 0, //Destination Tag associated with this execution. Execution unit will broadcast it
+                output [IPC * TAG_WIDTH - 1 : 0] executionTag, //Destination Tag associated with this execution. Execution unit will broadcast it
                                                                         //as soon as it finishes this instruction's execution
         //From Dispatch
                 input [2 ** EXEC_WIDTH - 1 : 0] availableFunctionalUnits,
@@ -235,8 +235,8 @@ module ReorderBuffer #(parameter ADDRESS_WIDTH = 10,
             
             else if(allowBroadcast)begin
                 if(ongoingBroadcastSource2)
-                    ROB_source2Valid[robPointer] <= 1;  //Data becomes valid after broadcast
-                    ROB_source2Data[robPointer] <= broadcastDestinationData;
+                    ROB_source2Valid[broadcastMatchSource2] <= 1;  //Data becomes valid after broadcast
+                    ROB_source2Data[broadcastMatchSource2] <= broadcastDestinationData;
             end
 		end
 	end
@@ -258,8 +258,8 @@ module ReorderBuffer #(parameter ADDRESS_WIDTH = 10,
             
             else if(allowBroadcast)begin
                 if(ongoingBroadcastSource1)
-                    ROB_source1Valid[robPointer] <= 1;  //Data becomes valid after broadcast
-                    ROB_source1Data[robPointer] <= broadcastDestinationData;
+                    ROB_source1Valid[broadcastMatchSource1] <= 1;  //Data becomes valid after broadcast
+                    ROB_source1Data[broadcastMatchSource1] <= broadcastDestinationData;
             end
 		end
 	end
@@ -333,7 +333,8 @@ module ReorderBuffer #(parameter ADDRESS_WIDTH = 10,
 	assign op1 = source1DispatchData; //op1 usually contains only rs1
 	//dispatchAddress_reg is used because dispatchAddress changes when DispatchData is produced.
 	assign op2 = ROB_RType[dispatchAddress_reg] ? source2DispatchData : immediateDispatchData; //Add more conditions for other types of instructions
-	
+	//Execution Tag assignment
+	assign executionTag = dispatchAddress_reg;
 	
 	//Broadcast Tag Matching(comparison intensive)
 	

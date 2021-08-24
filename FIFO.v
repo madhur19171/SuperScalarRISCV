@@ -5,7 +5,6 @@ module FIFO #(parameter DATA_WIDTH = 32,
 	(
 		input clk,
 		input rst,
-		input halt,
 		
 		output empty,
 		input rd_en,

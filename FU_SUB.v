@@ -36,7 +36,7 @@ module FU_SUB #(parameter DATA_WIDTH = 32,
 		
 		always @(posedge clk)begin
 			if(rst)
-				counter <= 1;
+				counter <= 0;
 			else if(ce)begin
 				counter <= 1;
 			end else if(runCounter)
@@ -64,7 +64,7 @@ module FU_SUB #(parameter DATA_WIDTH = 32,
 				idle_reg <= 1;
 			else if(ce)
 				idle_reg <= 0;
-			else if(done & queued)    //A functional unit will become idle only when it has completed the computation and successfully queued it in the broadcast queue
+			else if(queued)    //A functional unit will become idle only when it has completed the computation and successfully queued it in the broadcast queue
 				idle_reg <= 1;
 		end
 	   assign idle = idle_reg & ~ce;   //~ce is to avoid immediate dispatch of instruction in the same functional 
