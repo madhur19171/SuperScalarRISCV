@@ -78,14 +78,12 @@ module ReorderBuffer #(parameter ADDRESS_WIDTH = 10,
 	
 	reg [ROB_SIZE - 1 : 0] ROB_source2Valid = 0;
 	reg [ROB_SIZE - 1 : 0] ROB_source1Valid = 0;
-	reg [ROB_SIZE - 1 : 0] ROB_destinationValid = 0;//to be made 1 After Broadcast
 	
 	(* ram_style =  "register" *)reg [TAG_WIDTH - 1 : 0] ROB_source2Tag [ROB_SIZE - 1 : 0];
 	(* ram_style =  "register" *)reg [TAG_WIDTH - 1 : 0] ROB_source1Tag [ROB_SIZE - 1 : 0];
 	
 	(* ram_style =  "BRAM" *)reg [DATA_WIDTH - 1 : 0] ROB_source2Data [ROB_SIZE - 1 : 0];
 	(* ram_style =  "BRAM" *)reg [DATA_WIDTH - 1 : 0] ROB_source1Data [ROB_SIZE - 1 : 0];
-	(* ram_style =  "BRAM" *)reg [DATA_WIDTH - 1 : 0] ROB_destinationData [ROB_SIZE - 1 : 0];
 	
 	(* ram_style =  "BRAM" *)reg [DATA_WIDTH - 1 : 0] ROB_immediateData [ROB_SIZE - 1 : 0];//Might work without this
 	
@@ -119,7 +117,6 @@ module ReorderBuffer #(parameter ADDRESS_WIDTH = 10,
 			ROB_source1Tag[i] = 0;
 			ROB_source2Data[i] = 0;
 			ROB_source1Data[i] = 0;
-			ROB_destinationData[i] = 0;
 			ROB_immediateData[i] = 0;
 			ROB_executionID[i] = 0;
 		end

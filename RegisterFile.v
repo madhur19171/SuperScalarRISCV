@@ -1,4 +1,4 @@
-module RegisterFile #(parameter ADDRESS_WIDTH = 10,
+module FutureRegisterFile #(parameter ADDRESS_WIDTH = 10,
                 parameter DATA_WIDTH = 32,
 			    parameter IPC = 1,
 			    parameter TAG_WIDTH = 7,
@@ -50,6 +50,9 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 	(* ram_style =  "BRAM" *) reg [DATA_WIDTH - 1 : 0] RF_DATA [0 : 2 ** RF_WIDTH - 1];	//Should be RAW type of RAM
 	(* ram_style =  "register" *)reg [TAG_WIDTH - 1 : 0] RF_TAG [0 : 2 ** RF_WIDTH - 1]; 
 	reg [2 ** RF_WIDTH - 1 : 0] RF_VALID = 1;
+
+    reg [RF_WIDTH - 1 : 0] broadcastDestinationAddress = 0;
+    reg commitBroadcast = 0;//Decides if the broadcast will actually be committed in the RF or not
 
 	reg [IPC * DATA_WIDTH - 1 : 0] rs1_data_reg = 0;
 	reg [IPC * DATA_WIDTH - 1 : 0] rs2_data_reg = 0;
@@ -108,8 +111,24 @@ module RegisterFile #(parameter ADDRESS_WIDTH = 10,
 				end
 			end
 			
+			always @(*)begin
+			     broadcastDestinationAddress = 0;
+			     commitBroadcast = 0;
+			     for(j = 0; j < 2 ** RF_WIDTH; j = j + 1)begin
+			         if(broadcastDataAvailable & (broadcastDestinationTag == RF_TAG[j]) & ~RF_VALID[j])begin
+			             broadcastDestinationAddress = j;
+			             commitBroadcast = 1;//This is necessary to check because if the tag corresponding to the broadcasted instruction
+			                                 //was overwritten by some other instruction decoded afer it, then the broadcast will not be committed.
+			         end
+			     end
+			end
 			
 			always @(posedge clk)begin
+			     //This design is possible because during a broadcast, the Decoding logic is halted and committing the broadcast has a higher priority.
+			    if(commitBroadcast)begin
+			         RF_DATA[broadcastDestinationAddress] <= broadcastDestinationData;
+			         RF_VALID[broadcastDestinationAddress] <= 1;
+			    end else
 				if(RType_valid[i] | IType_valid[i])begin//Only R, I, U and J type instructions have rd
 					RF_VALID[rd[i * RF_WIDTH +: RF_WIDTH]] <= 0;//This will be made 1 once the corresponding data has been comitted by the write back unit
 					RF_TAG[rd[i * RF_WIDTH +: RF_WIDTH]] <= destinationTag;

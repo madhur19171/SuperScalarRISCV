@@ -7,14 +7,18 @@ module InstructionMemory #(parameter ADDRESS_WIDTH = 10,
 		  	    input ce,
 		  	    input [ADDRESS_WIDTH - 1 : 0] address,
 		  	    output [DATA_WIDTH - 1 : 0] data,//Data Bus is as wide as the number of instructions issued
-		  	    output dataValid
+		  	    output dataValid,
+		  	    
+		  	    input we,
+		  	    input [5 : 0] w_address,
+		  	    input [31 : 0] w_data
 		  	   );
 		  	    
 		  	    
 	reg [DATA_WIDTH - 1 : 0] IM [0 : (2 ** ADDRESS_WIDTH) - 1];//Instruction Memory RAM(only to store data that will be assigned to partitioned ram)
 								     //This will not be synthesized
 
-	
+
 	reg [DATA_WIDTH - 1 : 0] readData = 0;
 	reg dataValid_reg = 0;
 	
@@ -36,6 +40,10 @@ module InstructionMemory #(parameter ADDRESS_WIDTH = 10,
 	   end
 	end
 
+    always @(posedge clk)begin
+        if(we)
+            IM[w_address] <= w_data;
+    end
 	
 	//Data valid becomes 1 on every successful read
 	always @(posedge clk, posedge rst)begin

@@ -1,5 +1,10 @@
 module Processor(input clk,
-		  input rst);
+		  input rst,//Remove
+		  input we,//Remove
+		  input [5 : 0] address,//Remove
+		  input [31 : 0] data,//Remove
+		  output [31 : 0]broadcast_data//Remove
+		  );
 		  
 	parameter ADDRESS_WIDTH = 10;
 	parameter DATA_WIDTH = 32;
@@ -89,9 +94,11 @@ module Processor(input clk,
     wire [TAG_WIDTH - 1 : 0] broadcastDestinationTag;
     wire [DATA_WIDTH - 1 : 0] broadcastDestinationData;
 	
+	assign broadcast_data = broadcastDestinationData;//Remove
 	
 	InstructionMemory #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC)) InstructionMemory_0 
-		(.clk(clk), .rst(rst), .ce(IF_IM_ce), .address(IF_IM_address), .data(IM_IF_data), .dataValid(IM_IF_dataValid));
+		(.clk(clk), .rst(rst), .ce(IF_IM_ce), .address(IF_IM_address), .data(IM_IF_data), .dataValid(IM_IF_dataValid),
+		.we(we), .w_address(address), .w_data(data));
 		
 	InstructionFetch #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC)) InstructionFetch_0
 		(.clk(clk), .rst(rst), .halt(IF_halt), .isBranchTaken(0), .branchTarget(0), .IM_ce(IF_IM_ce), .IM_address(IF_IM_address), .IM_data(IM_IF_data), .IM_dataValid(IM_IF_dataValid), .IF_data(IF_Decode_data), .IF_dataValid(IF_Decode_dataValid));
@@ -99,7 +106,7 @@ module Processor(input clk,
 	Decode #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC), .TAG_WIDTH(TAG_WIDTH), .OPCODE_WIDTH(OPCODE_WIDTH), .RF_WIDTH(RF_WIDTH), .RS2_OFFSET(RS2_OFFSET), .RS1_OFFSET(RS1_OFFSET), .RD_OFFSET(RD_OFFSET), .FUNC3_OFFSET(FUNC3_OFFSET), .FUNC3_WIDTH(FUNC3_WIDTH), .FUNC7_OFFSET(FUNC7_OFFSET), .FUNC7_WIDTH(FUNC7_WIDTH), .IMM_OFFSET(IMM_OFFSET), .IMM_WIDTH(IMM_WIDTH), .EXEC_WIDTH(EXEC_WIDTH)) Decode_1
 		(.clk(clk), .rst(rst), .DEC_data(IF_Decode_data), .DEC_dataValid(IF_Decode_dataValid), .opcode(Decode_RF_opcode), .RType_valid(Decode_RF_RType_valid), .rs2(Decode_RF_rs2), .rs1(Decode_RF_rs1), .rd(Decode_RF_rd), .func3(Decode_RF_func3), .func7(Decode_RF_func7), .IType_valid(Decode_RF_IType_valid), .LoadOperation(Decode_RF_LoadOperation), .imm(Decode_RF_imm), .SType_valid(Decode_RF_SType_valid), .executionID(Decode_executionID));
     
-    RegisterFile #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC), .TAG_WIDTH(TAG_WIDTH), .OPCODE_WIDTH(OPCODE_WIDTH), .RF_WIDTH(RF_WIDTH)) RegisterFile_0
+    FutureRegisterFile #(.ADDRESS_WIDTH(ADDRESS_WIDTH), .DATA_WIDTH(DATA_WIDTH), .IPC(IPC), .TAG_WIDTH(TAG_WIDTH), .OPCODE_WIDTH(OPCODE_WIDTH), .RF_WIDTH(RF_WIDTH)) FutureRegisterFile_0
         (.clk(clk), .rst(rst), .halt(RF_halt), .RType_valid(Decode_RF_RType_valid), .IType_valid(Decode_RF_IType_valid), .SType_valid(Decode_RF_SType_valid), .rs2(Decode_RF_rs2), .rs2_tag(RF_ROB_rs2_tag), .rs2_dataValid(RF_ROB_rs2_dataValid), .rs2_data(RF_ROB_rs2_data), .rs1(Decode_RF_rs1), .rs1_tag(RF_ROB_rs1_tag), .rs1_dataValid(RF_ROB_rs1_dataValid), .rs1_data(RF_ROB_rs1_data), .destinationTag(ROB_RF_destinationTag), .rd(Decode_RF_rd),
         .allowDecode(allowDecode), .allowBroadcast(allowBroadcast), .broadcastDataAvailable(broadcastDataAvailable), .broadcastDestinationTag(broadcastDestinationTag), .broadcastDestinationData(broadcastDestinationData));
 
